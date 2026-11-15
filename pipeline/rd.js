@@ -1,0 +1,2 @@
+function rays(cx,cy,col,n=18,t=0,a=.12){ctx.save();ctx.fillStyle=col;ctx.globalAlpha=a;for(let i=0;i<n;i++){const a0=(i/n)*6.283+t*.12,a1=a0+3.1416/n;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+Math.cos(a0)*900,cy+Math.sin(a0)*900);ctx.lineTo(cx+Math.cos(a1)*900,cy+Math.sin(a1)*900);ctx.closePath();ctx.fill()}ctx.restore()}
+function dots(col,a=.08,y0=0,y1=H,sp=24,r=4){ctx.save();ctx.fillStyle=col;ctx.globalAlpha=a;for(let y=y0;y<y1;y+=sp)for(let x=((y/sp)%2)*sp/2;x<W;x+=sp){ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill()}ctx.restore()}

@@ -1,0 +1,1 @@
+function sweat(x,y,k,s=1){ctx.save();ctx.translate(x,y+k*14);ctx.scale(s,s);ctx.beginPath();ctx.moveTo(0,-12);ctx.quadraticCurveTo(10,2,0,10);ctx.quadraticCurveTo(-10,2,0,-12);fs('#7fd8ff',true,2.5);ctx.restore()}

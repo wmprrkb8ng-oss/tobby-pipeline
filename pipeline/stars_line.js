@@ -1,0 +1,1 @@
+function stars(n,hmax,sd=7){const s0=seed;seed=sd;ctx.fillStyle='#fff';for(let i=0;i<n;i++){const x=rnd()*W,y=rnd()*hmax;ctx.globalAlpha=.5+.4*Math.sin(T*2+i);ctx.fillRect(x,y,2,2)}ctx.globalAlpha=1;seed=s0}

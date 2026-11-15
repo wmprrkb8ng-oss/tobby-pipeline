@@ -1,0 +1,3 @@
+function cglow(x,y,r,c0,c1){const g=ctx.createRadialGradient(x,y,2,x,y,r);g.addColorStop(0,c0);g.addColorStop(1,c1||'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(x-r,y-r,2*r,2*r)}
+function moon(x,y,r){cglow(x,y,r*3.2,'rgba(190,215,255,.35)');ctx.beginPath();ctx.arc(x,y,r,0,7);fs('#e9efff',true,3);ctx.fillStyle='rgba(150,170,210,.45)';ctx.beginPath();ctx.arc(x-r*.3,y-r*.2,r*.22,0,7);ctx.arc(x+r*.35,y+r*.3,r*.15,0,7);ctx.fill()}
+function stars(n,hmax,sd=7){const s0=seed;seed=sd;ctx.fillStyle='#fff';for(let i=0;i<n;i++){const x=rnd()*W,y=rnd()*hmax,tw=.5+.5*Math.sin(T*2+i);ctx.globalAlpha=.4+.5*tw;ctx.fillRect(x,y,2,2)}ctx.globalAlpha=1;seed=s0}
