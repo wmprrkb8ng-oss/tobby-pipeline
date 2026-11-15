@@ -1,6 +1,7 @@
 # Historique des vidéos (ne jamais répéter une histoire)
 - 2026-11-15 | Roy Sullivan, foudroyé 7 fois (gardien de parc, Virginie) | programmé le 2026-11-15 à 01:52 sur you_tube_repost (Metricool post 428483490) | titre « Et si… tu étais foudroyé 7 fois ? ⚡ » | hashtags #etsi #histoirevraie #faitsreels #incroyable #foudre #roysullivan #apprendresurtiktok | ~1046 caractères ElevenLabs
+- 2026-11-15 | Ann Hodges, touchée par une météorite (Sylacauga, Alabama, 1954) | programmé le 2026-11-15 à 11:00 (Europe/Paris) sur you_tube_repost (Metricool post 428661132) | titre « Et si… une météorite te tombait dessus pendant ta sieste ? ☄️ » | hashtags #etsi #histoirevraie #faitsreels #incroyable #meteorite #annhodges #apprendresurtiktok | 991 caractères ElevenLabs (voix Hugo ; générateur « busy » plusieurs fois, réessayé, non facturé)
 Idées déjà écartées/vues : Charles Osborne (hoquet), Larry Walters (chaise ballons).
-Idées à faire : Ann Hodges (météorite 1954), Randy Gardner (264 h sans dormir).
+Idées à faire : Randy Gardner (264 h sans dormir).
 
 Note technique : Metricool accepte l'URL raw.githubusercontent.com (copie la vidéo sur static.metricool.com) — validé le 2026-11-15.
