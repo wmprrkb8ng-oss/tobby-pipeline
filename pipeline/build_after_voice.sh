@@ -19,7 +19,7 @@ for i in range(len(c)-1):c[i][1]=c[i+1][0]
 c[-1][1]=round(TOT-1.2,3)
 json.dump(c,open('vo/caps.json','w'),ensure_ascii=False);open('caps.js','w').write('window.CAPS='+json.dumps(c,ensure_ascii=False)+';');print('TOT',TOT)
 PY
-python3 -I audio_x.py && python3 -I mixv.py vo && bash mk.sh
+python3 -I audio_x.py && python3 -I mixv.py vo && bash mk.sh; [ -n "$NORENDER" ] && exit 0
 TOT=$(python3 -c "import json;print(json.load(open('tot.json')))");NF=$(python3 -c "print(int($TOT*30))");H=$((NF/2))
 rm -rf fr;(node renderf.js 0 $H & node renderf.js $H $NF & wait) 2>&1 | grep -v "proxy\|accounts.google\|Allowed\|For details" | head -5 || true
 N=$(ls fr|wc -l);echo "images $N / $NF";[ "$N" -eq "$NF" ] || { echo "ERREUR: images manquantes"; exit 1; }
