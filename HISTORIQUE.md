@@ -1,7 +1,7 @@
 # Historique des vidéos (ne jamais répéter une histoire)
 - 2026-11-15 | Roy Sullivan, foudroyé 7 fois (gardien de parc, Virginie) | programmé le 2026-11-15 à 01:52 sur you_tube_repost (Metricool post 428483490) | titre « Et si… tu étais foudroyé 7 fois ? ⚡ » | hashtags #etsi #histoirevraie #faitsreels #incroyable #foudre #roysullivan #apprendresurtiktok | ~1046 caractères ElevenLabs
 - 2026-11-15 | Ann Hodges, touchée par une météorite (Sylacauga, Alabama, 1954) | programmé le 2026-11-15 à 11:00 (Europe/Paris) sur you_tube_repost (Metricool post 428661132) | titre « Et si… une météorite te tombait dessus pendant ta sieste ? ☄️ » | hashtags #etsi #histoirevraie #faitsreels #incroyable #meteorite #annhodges #apprendresurtiktok | 991 caractères ElevenLabs (voix Hugo ; générateur « busy » plusieurs fois, réessayé, non facturé)
-- 2026-11-15 | WOMBAT (cubes + cul blindé) | style « animal bizarre + narrateur qui jure » (autre format que « Et si… ? », demandé par l'utilisateur d'après une vidéo de référence) | NON publié, livré à l'utilisateur pour validation | 1220 caractères ElevenLabs
+- 2026-11-15 | WOMBAT (cubes + cul blindé) | style « animal bizarre + narrateur qui jure » (autre format que « Et si… ? », demandé par l'utilisateur d'après une vidéo de référence) | programmé le 2026-11-16 à 18:00 (Europe/Paris) sur you_tube_repost à la demande de l'utilisateur (Metricool) ; titre « Ce wombat chie des cubes 🐨 » ; hashtags #wombat #animaux #faitsreels #incroyable #nature #savaisturien #apprendresurtiktok | 1220 caractères ElevenLabs
 Idées déjà écartées/vues : Charles Osborne (hoquet), Larry Walters (chaise ballons).
 Idées à faire : Randy Gardner (264 h sans dormir).
 
