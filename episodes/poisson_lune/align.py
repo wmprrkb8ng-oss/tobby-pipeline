@@ -1,0 +1,165 @@
+import sys, os, re, json, subprocess as sp
+import numpy as np
+from scipy import signal
+SR = 16000
+SLOTS = []
+TEXT = ["Voici le poisson lune. Un gros putain de poisson complètement taré.", "C'est une tête qui nage. Pas de queue : la nature a oublié de la finir.", "Et il pèse deux tonnes, putain ! Le plus gros poisson osseux du monde.", "Deux tonnes de poisson. Et un cerveau de la grosseur d'une noix, connard !", "Et il mange quoi, le génie ? Des méduses.", "Les méduses, c'est presque juste de l'eau. Il n'y a rien à manger dedans.", "Alors il en bouffe toute la journée, le gros con.", "Et quand il a froid, il se couche sur le côté, à la surface, comme une crêpe.", "Il prend le soleil, pendant que des oiseaux lui mangent les parasites sur le dos.", "Et il se laisse faire. Le gros abruti.", "Mais attends, c'est pas fini : la femelle pond jusqu'à trois cents millions d'œufs.", "Trois cents millions, bordel ! C'est une vraie usine à bébés.", "Et presque tous se font bouffer. Pas fort, comme plan d'avenir.", "Donc voilà : un poisson de deux tonnes, avec une noix dans la tête, qui fait la crêpe sur l'eau.", "La nature, c'est vraiment n'importe quoi, putain."]
+CAPS = [["VOICI LE", "[POISSON LUNE.]", "UN GROS", "[PUTAIN]", "DE POISSON", "COMPLÈTEMENT", "[TARÉ.]"], ["C'EST UNE", "[TÊTE] QUI [NAGE.]", "PAS DE [QUEUE] :", "LA NATURE A", "OUBLIÉ DE", "LA [FINIR.]"], ["ET IL PÈSE", "[DEUX TONNES,]", "[PUTAIN] !", "LE PLUS GROS", "POISSON [OSSEUX]", "DU MONDE."], ["[DEUX TONNES]", "DE POISSON.", "ET UN [CERVEAU]", "DE LA GROSSEUR", "D'UNE [NOIX,]", "[CONNARD] !"], ["ET IL MANGE", "QUOI, LE", "[GÉNIE] ?", "DES [MÉDUSES.]"], ["LES [MÉDUSES,]", "C'EST PRESQUE", "JUSTE DE [L'EAU.]", "IL N'Y A [RIEN]", "À MANGER DEDANS."], ["ALORS IL EN", "[BOUFFE] TOUTE", "LA JOURNÉE,", "LE GROS [CON.]"], ["ET QUAND", "IL A [FROID,]", "IL SE COUCHE", "SUR LE [CÔTÉ,]", "À LA SURFACE,", "COMME UNE [CRÊPE.]"], ["IL PREND", "LE [SOLEIL,]", "PENDANT QUE DES", "[OISEAUX] LUI", "MANGENT LES", "[PARASITES]", "SUR LE DOS."], ["ET IL SE", "[LAISSE FAIRE.]", "LE GROS [ABRUTI.]"], ["MAIS ATTENDS,", "C'EST PAS FINI :", "LA [FEMELLE]", "POND JUSQU'À", "[TROIS CENTS]", "[MILLIONS]", "[D'ŒUFS.]"], ["[TROIS CENTS]", "[MILLIONS,]", "[BORDEL] !", "C'EST UNE VRAIE", "[USINE] À [BÉBÉS.]"], ["ET PRESQUE", "TOUS SE FONT", "[BOUFFER.]", "PAS [FORT,]", "COMME PLAN", "[D'AVENIR.]"], ["DONC VOILÀ :", "UN POISSON", "DE [DEUX TONNES,]", "AVEC UNE [NOIX]", "DANS LA [TÊTE,]", "QUI FAIT", "LA [CRÊPE]", "SUR L'EAU."], ["LA [NATURE,]", "C'EST VRAIMENT", "[N'IMPORTE QUOI,]", "[PUTAIN.]"]]
+
+FX = "highpass=f=80,equalizer=f=3000:t=q:w=1:g=1.5,acompressor=threshold=-24dB:ratio=2.5:attack=5:release=100:makeup=3,aecho=0.8:0.5:60:0.12"
+TRIM = "areverse,silenceremove=start_periods=1:start_threshold=-45dB:detection=peak,areverse,silenceremove=start_periods=1:start_threshold=-45dB:detection=peak"
+V = "aàâäeéèêëiîïoôöuùûüyœæ"
+
+
+def words_of(txt): return [w for w in txt.split() if re.search(r'[A-Za-zÀ-ÿœŒ]', w)]
+
+
+def syl(w):
+    w = w.lower(); w = re.sub(r"^[a-z]'", '', w); w = re.sub(r'[^a-zà-ÿœæ]', ' ', w)
+    n = 0
+    for part in w.split():
+        g = len(re.findall('[' + V + ']+', part))
+        if g > 1 and re.search(r'(e|es|ent)$', part) and not part.endswith('é'): g -= 1
+        n += max(1, g)
+    return max(1, n)
+
+
+def load(path, extra=[]):
+    raw = sp.check_output(['ffmpeg', '-v', 'error', '-i', path, *extra, '-ac', '1', '-ar', str(SR), '-f', 's16le', '-'])
+    return np.frombuffer(raw, np.int16).astype(np.float32) / 32768
+
+
+def dur(path): return float(sp.check_output(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', path]))
+
+
+def segments(x, thr_db=-40, min_gap=1.2):
+    hop = int(.01 * SR); e = np.sqrt(np.convolve(x ** 2, np.ones(hop) / hop, 'same')[::hop] + 1e-12); db = 20 * np.log10(e + 1e-9)
+    on = db > thr_db; segs = []; i = 0; n = len(on)
+    while i < n:
+        if on[i]:
+            j = i
+            while True:
+                k = j
+                while k < n and on[k]: k += 1
+                g = k
+                while g < n and not on[g]: g += 1
+                if g < n and (g - k) * .01 < min_gap: j = g; continue
+                segs.append((i * .01, k * .01)); i = g; break
+        else: i += 1
+    return segs
+
+
+def analyse(x):
+    """speech islands and syllable nuclei (seconds) of a dry, tempo-adjusted segment"""
+    b, a = signal.butter(2, [250 / (SR / 2), 3200 / (SR / 2)], 'band'); y = signal.lfilter(b, a, x)
+    hop = int(.005 * SR); e = np.sqrt(np.convolve(y ** 2, np.ones(4 * hop) / (4 * hop), 'same')[::hop] + 1e-12)
+    db = 20 * np.log10(e + 1e-9); mx = np.percentile(db, 98)
+    on = db > mx - 30; isl = []; i = 0
+    while i < len(on):
+        if on[i]:
+            j = i
+            while j < len(on) and on[j]: j += 1
+            isl.append([i * .005, j * .005]); i = j
+        else: i += 1
+    merged = []
+    for s in isl:
+        if merged and s[0] - merged[-1][1] < .11: merged[-1][1] = s[1]
+        else: merged.append(s)
+    isl = [s + [float(db[int(s[0] / .005):int(s[1] / .005) + 1].max())] for s in merged if s[1] - s[0] > .06]
+    for s in isl: s[2] = s[2] - mx
+    sm = np.convolve(db, np.ones(5) / 5, 'same')
+    pk, _ = signal.find_peaks(sm, prominence=2.5, distance=16, height=mx - 22)
+    nuc = [p * .005 for p in pk]
+    return isl, nuc
+
+
+def phrases(txt):
+    out = []; cur = []
+    for tok in txt.split():
+        if re.search(r'[A-Za-zÀ-ÿœŒ]', tok): cur.append(tok)
+        if re.search(r'[.,:;!?…]$', tok) or tok == ':':
+            if cur: out.append(cur); cur = []
+    if cur: out.append(cur)
+    return out
+
+
+def word_times(txt, isl, nuc):
+    ph = phrases(txt); W = [w for p in ph for w in p]
+    def spread(words, t0, t1):
+        s = [syl(w) for w in words]; S = sum(s); out = []; acc = 0
+        ns = [n - .04 for n in nuc if t0 - .02 <= n <= t1]
+        for si in s:
+            t = t0 + (t1 - t0) * acc / S
+            if out:
+                near = [n for n in ns if abs(n - t) < .09 and n > out[-1] + .05]
+                if near: t = min(near, key=lambda n: abs(n - t))
+                t = max(t, out[-1] + .06)
+            out.append(t); acc += si
+        return out
+    isl = [list(x) for x in isl if x[2] > -15 or (x[1] - x[0]) > .2]
+    ps = [sum(syl(w) for w in p) for p in ph]
+    speech = sum(b - a for a, b, _ in isl); rate = speech / sum(ps)
+    nP, nI = len(ph), len(isl); INF = 1e9
+    best = [[INF] * (nI + 1) for _ in range(nP + 1)]; bk = [[None] * (nI + 1) for _ in range(nP + 1)]; best[0][0] = 0
+    for i in range(nP):
+        for j in range(nI):
+            if best[i][j] >= INF: continue
+            for di in range(1, 4):
+                for dj in range(1, 5):
+                    if i + di > nP or j + dj > nI: continue
+                    sy = sum(ps[i:i + di]); d = isl[j + dj - 1][1] - isl[j][0]
+                    c = (np.log(max(d, .05) / (sy * rate))) ** 2 * 4 + .35 * (di - 1) + .35 * (dj - 1)
+                    if di > 1 and not all(ph[i + q][-1].endswith(',') or ph[i + q][-1].endswith(':') for q in range(di - 1)): c += .4
+                    if best[i][j] + c < best[i + di][j + dj]: best[i + di][j + dj] = best[i][j] + c; bk[i + di][j + dj] = (i, j)
+    i, j = nP, nI; groups = []
+    while (i, j) != (0, 0):
+        pi, pj = bk[i][j]; groups.append((pi, i, pj, j)); i, j = pi, pj
+    groups.reverse(); T = []
+    for pi, i2, pj, j2 in groups:
+        words = [w for p in ph[pi:i2] for w in p]
+        if i2 - pi == 1 or j2 - pj == 1 and i2 - pi == 1: T += spread(words, isl[pj][0], isl[j2 - 1][1]); continue
+        # several phrases in a run of islands: share islands by syllables
+        if j2 - pj >= i2 - pi:
+            k = pj
+            for q in range(pi, i2):
+                rem = i2 - q - 1; take = 1 if q < i2 - 1 else (j2 - k)
+                if q < i2 - 1:
+                    tot = sum(ps[q:i2]); acc = 0; take = 1
+                    while k + take < j2 - rem and (isl[k + take - 1][1] - isl[k][0]) < ps[q] * rate * .8: take += 1
+                T += spread(ph[q], isl[k][0], isl[k + take - 1][1]); k += take
+        else: T += spread(words, isl[pj][0], isl[j2 - 1][1])
+    return W, T, 'dp'
+
+
+def main():
+    src, od = sys.argv[1], sys.argv[2]; os.makedirs(od, exist_ok=True)
+    full = load(src); segs = json.load(open(os.environ['SEGS'])) if os.environ.get('SEGS') else segments(full)
+    print('segments found', len(segs), [(round(a, 2), round(b, 2)) for a, b in segs])
+    assert len(segs) == len(TEXT), 'segment count mismatch'
+    plan = []; caps = []; prev = 0
+    for k, ((a, b), txt, ch) in enumerate(zip(segs, TEXT, CAPS)):
+        s0 = SLOTS[k]; s1 = SLOTS[k + 1] if k + 1 < len(SLOTS) else 56.18
+        raw = f'{od}/r{k:02d}.wav'
+        sp.check_call(['ffmpeg', '-v', 'error', '-y', '-ss', str(max(0, a - .05)), '-to', str(b + .25), '-i', src, '-af', TRIM, '-ar', '44100', '-ac', '1', raw])
+        d0 = dur(raw); st = max(s0 + (.15 if k == 0 else .1), prev + .15); avail = s1 - st - .08 + (.45 if k == 0 else 0)
+        tempo = min(1.3 if k == len(TEXT) - 1 else 1.2, max(1.0, d0 / avail))
+        dry = f'{od}/d{k:02d}.wav'; out = f'{od}/s{k:02d}.wav'
+        sp.check_call(['ffmpeg', '-v', 'error', '-y', '-i', raw, '-af', f'atempo={tempo:.3f}', '-ar', '44100', '-ac', '1', dry])
+        sp.check_call(['ffmpeg', '-v', 'error', '-y', '-i', dry, '-af', FX, '-ar', '44100', '-ac', '2', out])
+        d = dur(dry); plan.append((out, st, d)); prev = st + d
+        isl, nuc = analyse(load(dry)); W, T, mode = word_times(txt, isl, nuc)
+        # captions
+        i = 0; nxt = SLOTS[k + 1] - .05 if k + 1 < len(SLOTS) else 60
+        cw = [[w for w in c.split() if re.search(r'[A-Za-zÀ-ÿ]', w)] for c in ch]
+        assert sum(map(len, cw)) == len(W), (k, sum(map(len, cw)), len(W), W)
+        starts = []
+        for words in cw: starts.append([st + T[i + j] - .03 for j in range(len(words))]); i += len(words)
+        for j, c in enumerate(ch):
+            a2 = starts[j][0]; b2 = starts[j + 1][0] if j + 1 < len(ch) else min(nxt, st + d + .6)
+            caps.append([round(a2, 3), round(b2, 3), c, [round(x, 3) for x in starts[j]]])
+        caps[-1][1] = round(st + d + .5, 3)
+        print(k, mode, 'start', round(st, 2), 'dur', round(d, 2), 'tempo', round(tempo, 2), 'islands', len(isl), 'phrases', len(phrases(txt)), 'nuclei', len(nuc), 'syl', sum(syl(w) for w in W))
+    json.dump(plan, open(f'{od}/plan.json', 'w')); json.dump(caps, open(f'{od}/caps.json', 'w'), ensure_ascii=False)
+
+
+if __name__ == '__main__': main()
